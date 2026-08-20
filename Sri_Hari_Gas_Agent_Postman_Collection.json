@@ -1,0 +1,854 @@
+{
+	"info": {
+		"_postman_id": "c1a011bf-86ab-47f6-95b1-e23f99aa8d8d",
+		"name": "Sri Hari Gas Agent API",
+		"description": "API collection for the Sri Hari Gas Agent mobile application (Flutter integration). Handles authentication, products catalog, cart actions, shipping addresses, checkout, and transaction gateway callbacks.",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Authentication",
+			"item": [
+				{
+					"name": "Customer Register / Signup",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Doe\",\n    \"mobile_number\": \"9876543211\",\n    \"password\": \"password123\",\n    \"confirm_password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/register",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"register"
+							]
+						},
+						"description": "Registers a new customer. Automatically saves the authentication token to the collection variables upon success."
+					},
+					"response": []
+				},
+				{
+					"name": "Customer Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mobile_number\": \"9876543211\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"login"
+							]
+						},
+						"description": "Logs in the customer using their mobile number and password. Automatically updates the collection variable token upon successful validation."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Profile",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"name\": \"John Updated\",\n    \"mobile_number\": \"9876543211\",\n    \"password\": \"newpassword123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/profile/update",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"profile",
+								"update"
+							]
+						},
+						"description": "Updates customer's profile name, mobile number, and/or password. Requires Bearer Token."
+					},
+					"response": []
+				},
+				{
+					"name": "Logout",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/logout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"logout"
+							]
+						},
+						"description": "Revokes the active customer auth token."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Products",
+			"item": [
+				{
+					"name": "Get Products Catalog",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/products",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"products"
+							]
+						},
+						"description": "Returns a list of all products added via the Laravel admin panel, including the dynamic `image_url` property."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Cart",
+			"item": [
+				{
+					"name": "Get Cart Items",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart"
+							]
+						},
+						"description": "Fetches the active shopping cart items for the logged-in customer."
+					},
+					"response": []
+				},
+				{
+					"name": "Add to Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"product_id\": 1,\n    \"quantity\": 2\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/cart",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart"
+							]
+						},
+						"description": "Adds a gas cylinder product to the shopping cart. Increments quantity if the item is already present."
+					},
+					"response": []
+				},
+				{
+					"name": "Remove from Cart",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "DELETE",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/cart/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"cart",
+								"1"
+							]
+						},
+						"description": "Removes an item from the customer's cart using the cart item ID."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Addresses",
+			"item": [
+				{
+					"name": "Get Saved Addresses",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/addresses",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"addresses"
+							]
+						},
+						"description": "Retrieves the saved delivery addresses for the customer."
+					},
+					"response": []
+				},
+				{
+					"name": "Save Delivery Address",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"address\": \"45, Gandhi Street, Velachery\",\n    \"location\": \"Chennai\",\n    \"pincode\": \"600042\",\n    \"landmark\": \"Opposite Rail Station\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/addresses",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"addresses"
+							]
+						},
+						"description": "Registers a new delivery address for the customer."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Orders & Payments",
+			"item": [
+				{
+					"name": "Checkout Order (COD)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"address_id\": 1,\n    \"payment_method\": \"cod\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/checkout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"checkout"
+							]
+						},
+						"description": "Converts current shopping cart items into a Cash on Delivery order and empties the cart."
+					},
+					"response": []
+				},
+				{
+					"name": "Checkout Order (Online)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"address_id\": 1,\n    \"payment_method\": \"online\",\n    \"razorpay_payment_id\": \"pay_razorpay1234567\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/checkout",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"checkout"
+							]
+						},
+						"description": "Converts cart items into an Online paid order and logs the transaction. Empties the cart."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Customer Orders / History",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"orders"
+							]
+						},
+						"description": "Lists all historical and active orders placed by the customer."
+					},
+					"response": []
+				},
+				{
+					"name": "Log Payment Gateway Callback",
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"order_id\": 1,\n    \"transaction_id\": \"pay_xyz987654321\",\n    \"amount\": 950.00,\n    \"payment_gateway\": \"Razorpay\",\n    \"status\": \"success\",\n    \"payload\": {\n        \"razorpay_payment_id\": \"pay_xyz987654321\",\n        \"razorpay_order_id\": \"order_abc123\",\n        \"razorpay_signature\": \"sig_99a88b77c\",\n        \"method\": \"upi\",\n        \"email\": \"customer@gmail.com\",\n        \"contact\": \"+919876543211\"\n    }\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/transactions/callback",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"transactions",
+								"callback"
+							]
+						},
+						"description": "Public callback webhook to log payment gateway details sent from the Flutter application. Updates order status to paid on success."
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Deliveryman",
+			"item": [
+				{
+					"name": "Deliveryman Login",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"var jsonData = pm.response.json();",
+									"if (jsonData.success && jsonData.data && jsonData.data.token) {",
+									"    pm.collectionVariables.set(\"token\", jsonData.data.token);",
+									"}"
+								],
+								"type": "text/javascript"
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"mobile_number\": \"9876543222\",\n    \"password\": \"password123\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/deliveryman/login",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"deliveryman",
+								"login"
+							]
+						},
+						"description": "Logs in the deliveryman using their phone and password. Automatically updates the collection variable token upon successful validation."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Assigned Orders",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/deliveryman/orders",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"deliveryman",
+								"orders"
+							]
+						},
+						"description": "Gets all orders assigned to the logged-in delivery driver."
+					},
+					"response": []
+				},
+				{
+					"name": "Get Order Detail (with Customer & Products)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{base_url}}/api/deliveryman/orders/1",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"deliveryman",
+								"orders",
+								"1"
+							]
+						},
+						"description": "Returns full details of an assigned order by its ID, loaded with customer, address, products, and transaction records."
+					},
+					"response": []
+				},
+				{
+					"name": "Update Order Status (Delivery stages)",
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{token}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [
+							{
+								"key": "Accept",
+								"value": "application/json",
+								"type": "text"
+							},
+							{
+								"key": "Content-Type",
+								"value": "application/json",
+								"type": "text"
+							}
+						],
+						"body": {
+							"mode": "raw",
+							"raw": "{\n    \"status\": \"cylinder delivered\"\n}",
+							"options": {
+								"raw": {
+									"language": "json"
+								}
+							}
+						},
+						"url": {
+							"raw": "{{base_url}}/api/deliveryman/orders/1/status",
+							"host": [
+								"{{base_url}}"
+							],
+							"path": [
+								"api",
+								"deliveryman",
+								"orders",
+								"1",
+								"status"
+							]
+						},
+						"description": "Updates order delivery status. Supported statuses: 'in progress', 'cylinder delivered', 'i got empty cylinder', 'cylinder delivered in godown', 'delivered'. Setting it to 'delivered' or 'cylinder delivered' automatically updates payment status to completed."
+					},
+					"response": []
+				}
+			]
+		}
+	],
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "base_url",
+			"value": "http://127.0.0.1:8000",
+			"type": "string"
+		},
+		{
+			"key": "token",
+			"value": "",
+			"type": "string"
+		}
+	]
+}
