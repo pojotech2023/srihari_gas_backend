@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Order;
 use App\Models\Deliveryman;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 
 class OrderController extends Controller
@@ -41,26 +42,51 @@ class OrderController extends Controller
         ]);
 
         $order = Order::findOrFail($id);
+        $deliveryman = Deliveryman::findOrFail($request->deliveryman_id);
+
         $order->update([
-            'deliveryman_id' => $request->deliveryman_id,
-            'status' => 'assigned' // Auto transition to assigned
+            'deliveryman_id' => $deliveryman->id,
+            'status' => 'assigned', // Auto transition to assigned
+            'assigned_at' => now(),
         ]);
 
-        return back()->with('success', 'Deliveryman assigned and order status set to Assigned.');
+        // Trigger push notification to assigned deliveryman
+        NotificationService::notifyDeliverymanAssigned($order, $deliveryman);
+
+        return back()->with('success', 'Deliveryman assigned and push notification sent.');
     }
 
     public function updateStatus(Request $request, $id)
     {
         $request->validate([
             'status' => 'required|in:pending,assigned,in progress,cylinder delivered,i got empty cylinder,cylinder delivered in godown,delivered,cancelled',
-            'payment_status' => 'required|in:pending,completed,failed',
+            'payment_status' => 'required|in:pending,paid,unpaid,failed',
         ]);
 
         $order = Order::findOrFail($id);
+        $oldStatus = $order->status;
+        $oldPaymentStatus = $order->payment_status;
+
         $order->update([
             'status' => $request->status,
             'payment_status' => $request->payment_status,
         ]);
+
+        if ($request->status !== $oldStatus) {
+            if ($request->status === 'delivered' || $request->status === 'cylinder delivered') {
+                NotificationService::notifyCustomerOrderDelivered($order);
+            } elseif ($request->status === 'cancelled') {
+                NotificationService::notifyCustomerOrderCancelled($order);
+            }
+        }
+
+        if ($request->payment_status !== $oldPaymentStatus) {
+            if ($request->payment_status === 'paid') {
+                NotificationService::notifyCustomerOrderPaid($order);
+            } elseif ($request->payment_status === 'failed') {
+                NotificationService::notifyCustomerOrderPaymentFailed($order);
+            }
+        }
 
         return back()->with('success', 'Order status updated successfully.');
     }

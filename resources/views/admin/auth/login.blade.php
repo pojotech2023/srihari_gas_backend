@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Login - Sri Hari Gas Agent</title>
+    <title>Admin Login - BookMyLPG</title>
     <link rel="stylesheet" href="{{ asset('css/admin-dashboard.css') }}">
 </head>
 <body class="auth-wrapper">
     <div class="auth-card">
         <div class="auth-header">
-            <img src="{{ asset('images/logo.png') }}" alt="Sri Hari Gas Logo" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 0.5rem; border-radius: 0.5rem;">
+            <img src="{{ asset('images/logo.png') }}" alt="BookMyLPG Logo" style="width: 80px; height: 80px; object-fit: contain; margin-bottom: 0.5rem; border-radius: 0.5rem;">
             <h2>Admin Sign In</h2>
             <p>Enter your credentials to access the console</p>
         </div>

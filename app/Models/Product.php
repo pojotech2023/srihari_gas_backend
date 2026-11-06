@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 
 class Product extends Model
 {
-    protected $fillable = ['name', 'image', 'price', 'description'];
+    protected $fillable = ['name', 'image', 'price', 'trip_type', 'description'];
 
     protected $appends = ['image_url'];
 

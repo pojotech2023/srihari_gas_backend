@@ -21,6 +21,7 @@
                     <th>Image</th>
                     <th>Product Name</th>
                     <th>Price</th>
+                    <th>Trip Type</th>
                     <th>Description</th>
                     <th style="width: 180px;">Actions</th>
                 </tr>
@@ -34,6 +35,11 @@
                         <td><strong>{{ $product->name }}</strong></td>
                         <td>
                             <strong style="color: var(--success);">₹{{ number_format($product->price, 2) }}</strong>
+                        </td>
+                        <td>
+                            <span class="badge" style="background: rgba(14, 165, 233, 0.15); color: #38bdf8; font-weight: 600;">
+                                {{ ($product->trip_type ?? 'two_way') === 'one_way' ? 'One Way' : 'Two Way' }}
+                            </span>
                         </td>
                         <td style="max-width: 300px; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;">
                             {{ $product->description ?? 'No description provided.' }}

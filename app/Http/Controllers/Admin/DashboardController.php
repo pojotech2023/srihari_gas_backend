@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use App\Models\Product;
+use App\Models\Deliveryman;
 use App\Models\Order;
-use Illuminate\Http\Request;
+use App\Models\Product;
+use App\Models\User;
 use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
@@ -16,14 +16,10 @@ class DashboardController extends Controller
         $totalCustomers = User::where('is_admin', false)->count();
         $totalProducts = Product::count();
         $totalOrders = Order::count();
+        $totalDeliverymen = Deliveryman::count();
         
-        $totalRevenue = Order::where('payment_status', 'completed')
+        $totalRevenue = Order::whereIn('payment_status', ['paid', 'completed'])
             ->sum('total_price');
-
-        $recentOrders = Order::with('user')
-            ->latest()
-            ->limit(5)
-            ->get();
 
         // Order Status stats for graphs
         $orderStats = Order::select('status', DB::raw('count(*) as total'))
@@ -41,8 +37,8 @@ class DashboardController extends Controller
             'totalCustomers',
             'totalProducts',
             'totalOrders',
+            'totalDeliverymen',
             'totalRevenue',
-            'recentOrders',
             'orderStatusStats'
         ));
     }

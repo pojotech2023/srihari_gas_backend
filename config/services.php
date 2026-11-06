@@ -35,4 +35,17 @@ return [
         ],
     ],
 
+    'google_maps' => [
+        'api_key' => env('GOOGLE_MAPS_API_KEY'),
+        'godown_latitude' => env('GODOWN_LATITUDE'),
+        'godown_longitude' => env('GODOWN_LONGITUDE'),
+        'delivery_charge_per_km' => (float) env('DELIVERY_CHARGE_PER_KM', 12),
+    ],
+
+    'fcm' => [
+        'server_key' => env('FCM_SERVER_KEY'),
+        'credentials_path' => env('FIREBASE_CREDENTIALS_PATH', storage_path('app/firebase_credentials.json')),
+        'project_id' => env('FIREBASE_PROJECT_ID', 'gas-customer-45d72'),
+    ],
+
 ];

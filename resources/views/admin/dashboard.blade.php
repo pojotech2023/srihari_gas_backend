@@ -2,7 +2,7 @@
 
 @section('title', 'Dashboard')
 @section('header_title', 'Dashboard')
-@section('header_subtitle', 'Sri Hari Gas Agent Overview & Analytics')
+@section('header_subtitle', 'BookMyLPG Overview & Analytics')
 
 @section('content')
 <!-- Metrics Overview -->
@@ -40,7 +40,7 @@
     <div class="metric-card success">
         <div class="metric-details">
             <p>Total Revenue</p>
-            <h2>₹{{ number_format($totalRevenue, 2) }}</h2>
+            <h2>₹{{ number_format(round($totalRevenue)) }}</h2>
         </div>
         <div class="metric-icon-box">
             <svg width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -48,56 +48,54 @@
     </div>
 </div>
 
-<!-- Main Panels Row -->
-<div class="dashboard-row">
-    <!-- Recent Orders Table -->
-    <div class="panel-card">
-        <div class="panel-header">
-            <h3>Recent Orders</h3>
-            <a href="{{ route('admin.orders.index') }}" class="btn btn-secondary" style="padding: 0.4rem 0.8rem; font-size: 0.8rem;">View All</a>
-        </div>
-        
-        <div class="table-responsive">
-            <table class="custom-table">
-                <thead>
-                    <tr>
-                        <th>Order ID</th>
-                        <th>Customer</th>
-                        <th>Status</th>
-                        <th>Amount</th>
-                        <th>Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($recentOrders as $order)
-                        <tr>
-                            <td><strong>#ORD-{{ $order->id }}</strong></td>
-                            <td>{{ $order->user->name }}</td>
-                            <td>
-                                <span class="badge {{ $order->status }}">
-                                    {{ $order->status }}
-                                </span>
-                            </td>
-                            <td>₹{{ number_format($order->total_price, 2) }}</td>
-                            <td>{{ $order->created_at->format('M d, Y h:i A') }}</td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" style="text-align: center; color: var(--text-muted);">No orders recorded yet.</td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-        </div>
-    </div>
-    
-    <!-- Visual Status Chart -->
-    <div class="panel-card">
-        <div class="panel-header">
+<!-- Order Status Breakdown Panel -->
+<div class="panel-card" style="margin-top: 1.5rem;">
+    <div class="panel-header">
+        <div>
             <h3>Order Status Breakdown</h3>
+            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 0.25rem;">Live tracking of order fulfillment lifecycle</p>
         </div>
-        <div style="position: relative; height:240px; width:100%; display: flex; justify-content: center; align-items: center;">
+        <a href="{{ route('admin.orders.index') }}" class="btn btn-primary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+            Manage Orders Queue &rarr;
+        </a>
+    </div>
+
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 2rem; align-items: center; padding: 1rem 0;">
+        <div style="position: relative; height: 260px; width: 100%; display: flex; justify-content: center; align-items: center;">
             <canvas id="orderStatusChart"></canvas>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 1rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(245, 158, 11, 0.1); border: 1px solid rgba(245, 158, 11, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #f59e0b;"></span>
+                    <strong style="color: #f59e0b;">Pending Orders</strong>
+                </div>
+                <span style="font-size: 1.15rem; font-weight: 700; color: #f59e0b;">{{ $orderStatusStats['pending'] }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(14, 165, 233, 0.1); border: 1px solid rgba(14, 165, 233, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #0ea5e9;"></span>
+                    <strong style="color: #0ea5e9;">Assigned for Delivery</strong>
+                </div>
+                <span style="font-size: 1.15rem; font-weight: 700; color: #0ea5e9;">{{ $orderStatusStats['assigned'] }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(16, 185, 129, 0.1); border: 1px solid rgba(16, 185, 129, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #10b981;"></span>
+                    <strong style="color: #10b981;">Delivered Orders</strong>
+                </div>
+                <span style="font-size: 1.15rem; font-weight: 700; color: #10b981;">{{ $orderStatusStats['delivered'] }}</span>
+            </div>
+
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2);">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="width: 12px; height: 12px; border-radius: 50%; background-color: #ef4444;"></span>
+                    <strong style="color: #ef4444;">Cancelled Orders</strong>
+                </div>
+                <span style="font-size: 1.15rem; font-weight: 700; color: #ef4444;">{{ $orderStatusStats['cancelled'] }}</span>
+            </div>
         </div>
     </div>
 </div>

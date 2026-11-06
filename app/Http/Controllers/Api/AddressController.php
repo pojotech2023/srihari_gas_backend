@@ -27,6 +27,8 @@ class AddressController extends Controller
             'location' => 'required|string|max:255',
             'pincode' => 'required|string|max:20',
             'landmark' => 'nullable|string|max:255',
+            'latitude' => 'required|numeric|between:-90,90',
+            'longitude' => 'required|numeric|between:-180,180',
         ]);
 
         if ($validator->fails()) {
@@ -43,6 +45,8 @@ class AddressController extends Controller
             'location' => $request->location,
             'pincode' => $request->pincode,
             'landmark' => $request->landmark,
+            'latitude' => $request->latitude,
+            'longitude' => $request->longitude,
         ]);
 
         return response()->json([

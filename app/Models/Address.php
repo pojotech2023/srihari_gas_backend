@@ -7,7 +7,23 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class Address extends Model
 {
-    protected $fillable = ['user_id', 'address', 'location', 'pincode', 'landmark'];
+    protected $fillable = [
+        'user_id',
+        'address',
+        'location',
+        'pincode',
+        'landmark',
+        'latitude',
+        'longitude',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'latitude' => 'float',
+            'longitude' => 'float',
+        ];
+    }
 
     public function user(): BelongsTo
     {

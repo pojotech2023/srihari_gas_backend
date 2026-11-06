@@ -2,7 +2,7 @@
 
 @section('title', 'Order Details')
 @section('header_title', 'Order Details')
-@section('header_subtitle', 'Review purchase items, payment gateways, and delivery details')
+@section('header_subtitle', 'Review purchase items, payment status, and delivery dispatch')
 
 @section('content')
 <div style="margin-bottom: 1rem;">
@@ -12,9 +12,8 @@
 </div>
 
 <div class="dashboard-row">
-    <!-- Items & Transactions -->
+    <!-- Ordered Items Panel -->
     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- Order Items -->
         <div class="panel-card">
             <div class="panel-header">
                 <h3>Ordered Items</h3>
@@ -42,59 +41,50 @@
                                 <td><strong>₹{{ number_format($item->price * $item->quantity, 2) }}</strong></td>
                             </tr>
                         @endforeach
+                        @php
+                            $itemsSubtotal = $order->items->sum(function($item) {
+                                return $item->price * $item->quantity;
+                            });
+                            $isOneWay = ($order->trip_type ?? 'two_way') === 'one_way';
+                        @endphp
                         <tr>
-                            <td colspan="4" style="text-align: right; font-weight: 700; border-top: 1px solid var(--border-color);">Subtotal:</td>
-                            <td style="font-weight: 700; border-top: 1px solid var(--border-color); color: var(--accent-indigo); font-size: 1.1rem;">
-                                ₹{{ number_format($order->total_price, 2) }}
+                            <td colspan="4" style="text-align: right; font-weight: 600; border-top: 1px solid var(--border-color);">Items Subtotal:</td>
+                            <td style="font-weight: 600; border-top: 1px solid var(--border-color); color: var(--text-primary); font-size: 1rem;">
+                                ₹{{ number_format(round($itemsSubtotal)) }}
+                            </td>
+                        </tr>
+                        <tr>
+                            <td colspan="4" style="text-align: right; font-weight: 600;">
+                                Delivery Charge
+                                @if(($order->distance_km ?? 0) > 0)
+                                    <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">
+                                        @if($isOneWay)
+                                            ({{ $order->distance_km }} KM one-way @ ₹12/KM)
+                                        @else
+                                            ({{ $order->distance_km }} KM one-way, {{ $order->round_trip_km ?? ($order->distance_km * 2) }} KM round-trip @ ₹12/KM)
+                                        @endif
+                                    </span>
+                                @endif:
+                            </td>
+                            <td style="font-weight: 600; color: #10b981; font-size: 1rem;">
+                                ₹{{ number_format(round($order->delivery_charge ?? 0)) }}
+                            </td>
+                        </tr>
+                        <tr style="background-color: rgba(255, 255, 255, 0.03);">
+                            <td colspan="4" style="text-align: right; font-weight: 700; border-top: 2px solid var(--border-color);">Total Amount:</td>
+                            <td style="font-weight: 700; border-top: 2px solid var(--border-color); color: var(--accent-indigo); font-size: 1.15rem;">
+                                ₹{{ number_format(round($order->total_price)) }}
                             </td>
                         </tr>
                     </tbody>
                 </table>
             </div>
         </div>
-
-        <!-- Payment Callback Details -->
-        <div class="panel-card">
-            <div class="panel-header">
-                <h3>Payment Callback Logs</h3>
-            </div>
-            @if($order->transaction)
-                <div class="details-list">
-                    <div class="details-item">
-                        <span>Transaction ID</span>
-                        <span style="color: var(--accent-indigo);">{{ $order->transaction->transaction_id }}</span>
-                    </div>
-                    <div class="details-item">
-                        <span>Payment Gateway</span>
-                        <span style="text-transform: uppercase;">{{ $order->transaction->payment_gateway }}</span>
-                    </div>
-                    <div class="details-item">
-                        <span>Callback Status</span>
-                        <span class="badge {{ $order->transaction->status === 'success' || $order->transaction->status === 'completed' ? 'success' : 'danger' }}">
-                            {{ $order->transaction->status }}
-                        </span>
-                    </div>
-                    <div class="details-item">
-                        <span>Gateway Amount Received</span>
-                        <span>₹{{ number_format($order->transaction->amount, 2) }}</span>
-                    </div>
-                </div>
-                
-                <div style="margin-top: 1rem;">
-                    <label style="font-size: 0.85rem; font-weight: 500; color: var(--text-muted); display: block; margin-bottom: 0.5rem;">Raw Callback Details (Payload JSON)</label>
-                    <pre style="background-color: rgba(0, 0, 0, 0.4); border: 1px solid var(--border-color); border-radius: 0.5rem; padding: 1rem; color: #10b981; font-family: monospace; font-size: 0.8rem; overflow-x: auto; max-height: 200px;">{{ json_encode($order->transaction->payload, JSON_PRETTY_PRINT) }}</pre>
-                </div>
-            @else
-                <div style="color: var(--text-muted); font-size: 0.9rem; text-align: center; padding: 1.5rem; border: 1px dashed var(--border-color); border-radius: 0.5rem;">
-                    No payment callback transaction logged for this order yet.
-                </div>
-            @endif
-        </div>
     </div>
 
     <!-- Info & Actions Panel -->
     <div style="display: flex; flex-direction: column; gap: 1.5rem;">
-        <!-- Order Stats Info -->
+        <!-- Order Status Info -->
         <div class="panel-card">
             <div class="panel-header">
                 <h3>Order Status</h3>
@@ -102,26 +92,50 @@
             
             <div class="details-list">
                 <div class="details-item">
-                    <span>Order Date</span>
-                    <span>{{ $order->created_at->format('M d, Y h:i A') }}</span>
+                    <span>Order Date & Time</span>
+                    <strong>{{ $order->created_at->format('M d, Y h:i A') }}</strong>
                 </div>
+                @if($order->assigned_at)
+                <div class="details-item">
+                    <span>Assigned Time</span>
+                    <strong style="color: #10b981;">{{ $order->assigned_at->format('M d, Y h:i A') }}</strong>
+                </div>
+                @endif
                 <div class="details-item">
                     <span>Payment Type</span>
                     <strong>{{ $order->payment_method === 'online' ? 'Online Payment (Razorpay)' : 'Cash on Delivery' }}</strong>
                 </div>
-                @if($order->payment_method === 'online' && $order->transaction)
-                <div class="details-item">
-                    <span>Razorpay ID</span>
-                    <span style="color: var(--accent-indigo); font-family: monospace;">{{ $order->transaction->transaction_id }}</span>
-                </div>
-                @endif
                 <div class="details-item">
                     <span>Current Status</span>
                     <span class="badge {{ $order->status }}">{{ $order->status }}</span>
                 </div>
                 <div class="details-item">
                     <span>Payment Status</span>
-                    <span class="badge {{ $order->payment_status === 'completed' ? 'success' : 'danger' }}">{{ $order->payment_status }}</span>
+                    @php
+                        $pStatus = $order->payment_status === 'completed' ? 'paid' : ($order->payment_status ?: 'pending');
+                        $badgeStyle = match($pStatus) {
+                            'paid' => 'background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3);',
+                            'pending' => 'background: rgba(245, 158, 11, 0.15); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3);',
+                            'unpaid' => 'background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);',
+                            'failed' => 'background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3);',
+                            default => 'background: rgba(148, 163, 184, 0.15); color: #94a3b8; border: 1px solid rgba(148, 163, 184, 0.3);'
+                        };
+                    @endphp
+                    <span class="badge" style="{{ $badgeStyle }} text-transform: capitalize; padding: 0.25rem 0.6rem; font-size: 0.8rem; border-radius: 4px;">{{ $pStatus }}</span>
+                </div>
+                @if(($order->distance_km ?? 0) > 0)
+                <div class="details-item">
+                    <span>Delivery Distance</span>
+                    <strong>{{ $order->distance_km }} KM <span style="font-size: 0.8rem; color: var(--text-muted); font-weight: normal;">({{ ($order->trip_type ?? 'two_way') === 'one_way' ? 'One Way' : 'Round Trip: ' . ($order->round_trip_km ?? ($order->distance_km * 2)) . ' KM' }})</span></strong>
+                </div>
+                @endif
+                <div class="details-item">
+                    <span>Delivery Charge</span>
+                    <strong style="color: #10b981;">₹{{ number_format(round($order->delivery_charge ?? 0)) }}</strong>
+                </div>
+                <div class="details-item">
+                    <span>Total Amount</span>
+                    <strong style="color: var(--accent-indigo); font-size: 1.15rem;">₹{{ number_format(round($order->total_price)) }}</strong>
                 </div>
             </div>
 
@@ -145,9 +159,10 @@
                 <div class="form-group">
                     <label for="payment_status">Change Payment Status</label>
                     <select name="payment_status" id="payment_status" class="form-control" required>
-                        <option value="pending" {{ $order->payment_status === 'pending' ? 'selected' : '' }}>Pending</option>
-                        <option value="completed" {{ $order->payment_status === 'completed' ? 'selected' : '' }}>Completed</option>
-                        <option value="failed" {{ $order->payment_status === 'failed' ? 'selected' : '' }}>Failed</option>
+                        <option value="pending" {{ ($order->payment_status === 'pending') ? 'selected' : '' }}>Pending</option>
+                        <option value="paid" {{ ($order->payment_status === 'paid' || $order->payment_status === 'completed') ? 'selected' : '' }}>Paid</option>
+                        <option value="unpaid" {{ ($order->payment_status === 'unpaid') ? 'selected' : '' }}>Unpaid</option>
+                        <option value="failed" {{ ($order->payment_status === 'failed') ? 'selected' : '' }}>Failed</option>
                     </select>
                 </div>
 
@@ -217,6 +232,12 @@
                                 <span>Driver Mobile</span>
                                 <span>{{ $order->deliveryman->mobile_number }}</span>
                             </div>
+                            @if($order->assigned_at)
+                            <div class="details-item" style="border: none; padding: 0; margin-top: 0.25rem;">
+                                <span>Assigned Time</span>
+                                <span style="color: #10b981;">{{ $order->assigned_at->format('M d, Y h:i A') }}</span>
+                            </div>
+                            @endif
                         </div>
                     @else
                         <div style="color: var(--text-muted); font-size: 0.85rem; font-style: italic;">No deliveryman was assigned.</div>

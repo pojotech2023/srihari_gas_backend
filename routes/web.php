@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\SiteController;
+use App\Http\Controllers\ContactController;
 use App\Http\Controllers\Admin\AuthController;
 use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Admin\CustomerController;
@@ -9,10 +11,12 @@ use App\Http\Controllers\Admin\DeliverymanController;
 use App\Http\Middleware\AdminMiddleware;
 use Illuminate\Support\Facades\Route;
 
-// Redirect root to admin login
-Route::get('/', function () {
-    return redirect()->route('admin.login');
-});
+// Marketing Website Routes
+Route::get('/', [SiteController::class, 'home'])->name('site.home');
+Route::get('/about', [SiteController::class, 'about'])->name('site.about');
+Route::get('/services', [SiteController::class, 'services'])->name('site.services');
+Route::get('/contact', [ContactController::class, 'show'])->name('site.contact');
+Route::post('/contact', [ContactController::class, 'submit'])->name('site.contact.submit');
 
 // Admin Auth Routes
 Route::get('/admin/login', [AuthController::class, 'showLogin'])->name('admin.login');

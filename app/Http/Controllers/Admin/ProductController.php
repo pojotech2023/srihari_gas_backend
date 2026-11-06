@@ -25,6 +25,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'trip_type' => 'required|in:one_way,two_way',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -37,6 +38,7 @@ class ProductController extends Controller
         Product::create([
             'name' => $request->name,
             'price' => $request->price,
+            'trip_type' => $request->trip_type ?? 'two_way',
             'description' => $request->description,
             'image' => $imagePath,
         ]);
@@ -54,6 +56,7 @@ class ProductController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'price' => 'required|numeric|min:0',
+            'trip_type' => 'required|in:one_way,two_way',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
         ]);
@@ -61,6 +64,7 @@ class ProductController extends Controller
         $data = [
             'name' => $request->name,
             'price' => $request->price,
+            'trip_type' => $request->trip_type ?? 'two_way',
             'description' => $request->description,
         ];
 

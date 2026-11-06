@@ -8,9 +8,13 @@ use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Transaction;
+use App\Services\DeliveryChargeService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use InvalidArgumentException;
+use RuntimeException;
 
 class OrderController extends Controller
 {
@@ -62,16 +66,35 @@ class OrderController extends Controller
             $totalPrice += $item->product->price * $item->quantity;
         }
 
+        // Determine trip type based on products in cart
+        $tripType = 'one_way';
+        foreach ($cartItems as $item) {
+            if (($item->product->trip_type ?? 'two_way') === 'two_way') {
+                $tripType = 'two_way';
+                break;
+            }
+        }
+
         try {
-            $order = DB::transaction(function () use ($userId, $request, $totalPrice, $cartItems) {
-                $paymentStatus = $request->payment_method === 'online' ? 'completed' : 'pending';
+            $deliveryDetails = app(DeliveryChargeService::class)->calculateDetails($address, $tripType);
+            $deliveryCharge = (float) $deliveryDetails['delivery_charge'];
+            $distanceKm = (float) $deliveryDetails['distance_km'];
+            $roundTripKm = (float) $deliveryDetails['round_trip_km'];
+            $orderTotal = (float) round($totalPrice + $deliveryCharge);
+
+            $order = DB::transaction(function () use ($userId, $request, $orderTotal, $deliveryCharge, $tripType, $distanceKm, $roundTripKm, $cartItems) {
+                $paymentStatus = $request->payment_method === 'online' ? 'paid' : 'pending';
 
                 // Create order
                 $order = Order::create([
                     'user_id' => $userId,
                     'address_id' => $request->address_id,
                     'status' => 'pending',
-                    'total_price' => $totalPrice,
+                    'total_price' => $orderTotal,
+                    'delivery_charge' => $deliveryCharge,
+                    'trip_type' => $tripType,
+                    'distance_km' => $distanceKm,
+                    'round_trip_km' => $roundTripKm,
                     'payment_status' => $paymentStatus,
                     'payment_method' => $request->payment_method,
                 ]);
@@ -92,7 +115,7 @@ class OrderController extends Controller
                         'order_id' => $order->id,
                         'user_id' => $userId,
                         'transaction_id' => $request->razorpay_payment_id,
-                        'amount' => $totalPrice,
+                        'amount' => $orderTotal,
                         'payment_gateway' => 'Razorpay',
                         'status' => 'success',
                         'payload' => [
@@ -108,12 +131,32 @@ class OrderController extends Controller
                 return $order;
             });
 
+            // Send push notification to customer for successful order placement
+            NotificationService::notifyCustomerOrderPlaced($order);
+
+            if ($order->payment_status === 'paid') {
+                NotificationService::notifyCustomerOrderPaid($order);
+            }
+
+            // Broadcast push notification for available order to all deliverymen
+            NotificationService::notifyAvailableOrder($order);
+
             return response()->json([
                 'success' => true,
                 'data' => $order->load(['items.product', 'transaction']),
                 'message' => 'Order placed successfully'
             ], 201);
 
+        } catch (InvalidArgumentException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        } catch (RuntimeException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 502);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -129,7 +172,7 @@ class OrderController extends Controller
             'transaction_id' => 'required|string',
             'amount' => 'required|numeric',
             'payment_gateway' => 'required|string',
-            'status' => 'required|string', // e.g. success, failed, pending
+            'status' => 'required|string', // e.g. success, failed, pending, paid
             'payload' => 'nullable|array', // Full gateway response
         ]);
 
@@ -146,7 +189,7 @@ class OrderController extends Controller
                 // Record the transaction
                 Transaction::create([
                     'order_id' => $request->order_id,
-                    'user_id' => $request->user()?->id, // If authenticated, log user_id
+                    'user_id' => $request->user()?->id,
                     'transaction_id' => $request->transaction_id,
                     'amount' => $request->amount,
                     'payment_gateway' => $request->payment_gateway,
@@ -156,10 +199,12 @@ class OrderController extends Controller
 
                 // Update order payment status
                 $order = Order::find($request->order_id);
-                if (strtolower($request->status) === 'success' || strtolower($request->status) === 'completed') {
-                    $order->update(['payment_status' => 'completed']);
+                if (in_array(strtolower($request->status), ['success', 'completed', 'paid'])) {
+                    $order->update(['payment_status' => 'paid']);
+                    NotificationService::notifyCustomerOrderPaid($order);
                 } else if (strtolower($request->status) === 'failed') {
                     $order->update(['payment_status' => 'failed']);
+                    NotificationService::notifyCustomerOrderPaymentFailed($order);
                 }
             });
 
@@ -176,9 +221,44 @@ class OrderController extends Controller
         }
     }
 
+    public function cancelOrder(Request $request, $id = null)
+    {
+        $userId = $request->user()->id;
+        $orderId = $id ?? $request->order_id ?? $request->id;
+
+        $order = Order::where('id', $orderId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        if (in_array($order->status, ['delivered', 'cancelled'])) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order cannot be cancelled in its current state'
+            ], 422);
+        }
+
+        $order->status = 'cancelled';
+        $order->save();
+
+        NotificationService::notifyCustomerOrderCancelled($order);
+
+        return response()->json([
+            'success' => true,
+            'data' => $order->load(['items.product', 'address', 'deliveryman', 'transaction']),
+            'message' => 'Order cancelled successfully'
+        ]);
+    }
+
     public function listOrders(Request $request)
     {
-        $orders = Order::with(['items.product', 'address'])
+        $orders = Order::with(['items.product', 'address', 'deliveryman', 'transaction'])
             ->where('user_id', $request->user()->id)
             ->latest()
             ->get();
@@ -187,6 +267,32 @@ class OrderController extends Controller
             'success' => true,
             'data' => $orders,
             'message' => 'Orders retrieved successfully'
+        ]);
+    }
+
+    public function showOrder(Request $request, $id)
+    {
+        $userId = $request->user()?->id;
+
+        $query = Order::where('id', $id);
+
+        if ($userId) {
+            $query->where('user_id', $userId);
+        }
+
+        $order = $query->first();
+
+        if (!$order) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Order not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $order,
+            'message' => 'Order retrieved successfully'
         ]);
     }
 
@@ -200,7 +306,7 @@ class OrderController extends Controller
             ], 404);
         }
 
-        $orders = Order::with(['items.product', 'address'])
+        $orders = Order::with(['items.product', 'address', 'deliveryman', 'transaction'])
             ->where('user_id', $id)
             ->latest()
             ->get();

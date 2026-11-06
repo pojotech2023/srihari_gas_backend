@@ -1,8 +1,8 @@
 {
   "info": {
     "_postman_id": "8816ed1d-9b5d-43a9-a636-0de4aebab0ab",
-    "name": "Sri Hari Gas Agent API",
-    "description": "API collection for the Sri Hari Gas Agent mobile application (Flutter integration). Handles authentication, products catalog, cart actions, shipping addresses, checkout, and transaction gateway callbacks.",
+    "name": "BookMyLPG Agent API",
+    "description": "API collection for the BookMyLPG mobile application (Flutter integration). Handles authentication, products catalog, cart actions, shipping addresses, checkout, and transaction gateway callbacks.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
     "_exporter_id": "32381348"
   },
@@ -408,6 +408,24 @@
         },
         {
           "name": "Save Delivery Address",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data && jsonData.data.id) {",
+                  "    pm.collectionVariables.set(\"address_id\", jsonData.data.id);",
+                  "}",
+                  "pm.test(\"Address coordinates are saved\", function () {",
+                  "    pm.expect(jsonData.data.latitude).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data.longitude).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -434,7 +452,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"address\": \"45, Gandhi Street, Velachery\",\n    \"location\": \"Chennai\",\n    \"pincode\": \"600042\",\n    \"landmark\": \"Opposite Rail Station\"\n}",
+              "raw": "{\n    \"address\": \"45, Gandhi Street, Velachery\",\n    \"location\": \"Chennai\",\n    \"pincode\": \"600042\",\n    \"landmark\": \"Opposite Rail Station\",\n    \"latitude\": 12.9756,\n    \"longitude\": 80.2212\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -451,7 +469,7 @@
                 "addresses"
               ]
             },
-            "description": "Registers a new delivery address for the customer."
+            "description": "Registers a new delivery address. latitude and longitude are the customer's coordinates and are required for delivery charge calculation. The godown coordinates remain fixed in the server configuration."
           },
           "response": []
         }
@@ -462,6 +480,25 @@
       "item": [
         {
           "name": "Checkout Order (COD)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set(\"order_id\", jsonData.data.id);",
+                  "}",
+                  "pm.test(\"Delivery charge and distance are returned\", function () {",
+                  "    pm.expect(jsonData.data.delivery_charge).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data.distance_km).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data.round_trip_km).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -488,7 +525,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"address_id\": 1,\n    \"payment_method\": \"cod\"\n}",
+              "raw": "{\n    \"address_id\": {{address_id}},\n    \"payment_method\": \"cod\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -505,12 +542,31 @@
                 "checkout"
               ]
             },
-            "description": "Converts current shopping cart items into a Cash on Delivery order and empties the cart."
+            "description": "Creates a COD order using the selected address. The API calculates round-trip distance from the fixed godown to the customer and stores delivery_charge at Rs.12 per KM. total_price includes the delivery charge once."
           },
           "response": []
         },
         {
           "name": "Checkout Order (Online)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "if (jsonData.success && jsonData.data) {",
+                  "    pm.collectionVariables.set(\"order_id\", jsonData.data.id);",
+                  "}",
+                  "pm.test(\"Delivery charge and distance are returned\", function () {",
+                  "    pm.expect(jsonData.data.delivery_charge).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data.distance_km).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data.round_trip_km).to.be.a(\"number\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -537,7 +593,7 @@
             ],
             "body": {
               "mode": "raw",
-              "raw": "{\n    \"address_id\": 1,\n    \"payment_method\": \"online\",\n    \"razorpay_payment_id\": \"pay_razorpay1234567\"\n}",
+              "raw": "{\n    \"address_id\": {{address_id}},\n    \"payment_method\": \"online\",\n    \"razorpay_payment_id\": \"pay_razorpay1234567\"\n}",
               "options": {
                 "raw": {
                   "language": "json"
@@ -554,7 +610,7 @@
                 "checkout"
               ]
             },
-            "description": "Converts cart items into an Online paid order and logs the transaction. Empties the cart."
+            "description": "Creates an online order using the selected address. delivery_charge is calculated once from the fixed godown to the customer and included in the payment total."
           },
           "response": []
         },
@@ -730,6 +786,22 @@
         },
         {
           "name": "Get Order Detail (with Customer & Products)",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var jsonData = pm.response.json();",
+                  "pm.test(\"Delivery charge and distance are present\", function () {",
+                  "    pm.expect(jsonData.data).to.have.property(\"delivery_charge\");",
+                  "    pm.expect(jsonData.data.delivery_charge).to.be.a(\"number\");",
+                  "    pm.expect(jsonData.data).to.have.property(\"distance_km\");",
+                  "});"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
           "request": {
             "auth": {
               "type": "bearer",
@@ -750,7 +822,7 @@
               }
             ],
             "url": {
-              "raw": "{{base_url}}/api/deliveryman/orders/1",
+              "raw": "{{base_url}}/api/deliveryman/orders/{{order_id}}",
               "host": [
                 "{{base_url}}"
               ],
@@ -761,7 +833,7 @@
                 "1"
               ]
             },
-            "description": "Returns full details of an assigned order by its ID, loaded with customer, address, products, and transaction records."
+            "description": "Returns full details of an assigned order. The response includes data.delivery_charge, calculated once during checkout from the fixed godown to the customer's selected address."
           },
           "response": []
         },
@@ -813,7 +885,295 @@
                 "status"
               ]
             },
-            "description": "Updates order delivery status. Supported statuses: 'in progress', 'cylinder delivered', 'i got empty cylinder', 'cylinder delivered in godown', 'delivered'. Setting it to 'delivered' or 'cylinder delivered' automatically updates payment status to completed."
+            "description": "Updates order delivery status. Supported statuses: 'in progress', 'cylinder delivered', 'i got empty cylinder', 'cylinder delivered in godown', 'delivered'. Setting it to 'delivered' or 'cylinder delivered' automatically updates payment status to paid."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Payment Status (Deliveryman)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"payment_status\": \"paid\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/orders/{{order_id}}/payment-status",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "orders",
+                "{{order_id}}",
+                "payment-status"
+              ]
+            },
+            "description": "Updates the payment status of an assigned order. Allowed values: 'pending', 'paid', 'unpaid', 'failed'. Permanently updates the order in the database and reflects in the Admin panel."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Orders (Self-Assignment Queue)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/available-orders",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "available-orders"
+              ]
+            },
+            "description": "Returns a list of unassigned pending orders available for self-assignment by delivery agents."
+          },
+          "response": []
+        },
+        {
+          "name": "Claim / Accept Order (Self-Assignment)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/orders/{{order_id}}/claim",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "orders",
+                "{{order_id}}",
+                "claim"
+              ]
+            },
+            "description": "Allows a delivery agent to claim and self-assign an unassigned order. Sets deliveryman_id to the logged-in agent and transitions status to 'assigned'."
+          },
+          "response": []
+        },
+        {
+          "name": "Register / Update FCM Token",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n    \"fcm_token\": \"fcm_device_token_string_here\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            },
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/fcm-token",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "fcm-token"
+              ]
+            },
+            "description": "Registers or updates the delivery agent's FCM token for receiving push notifications when new orders are placed or assigned."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Profile Documents (Aadhaar, Licence, Insurance)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "aadhar_card",
+                  "type": "file",
+                  "description": "Aadhaar Card image"
+                },
+                {
+                  "key": "driving_licence",
+                  "type": "file",
+                  "description": "Driving Licence image (also accepts pan_card)"
+                },
+                {
+                  "key": "insurance",
+                  "type": "file",
+                  "description": "Insurance image (also accepts rc_book)"
+                },
+                {
+                  "key": "photo",
+                  "type": "file",
+                  "description": "Profile photo"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/profile-update",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "profile-update"
+              ]
+            },
+            "description": "Uploads and updates Deliveryman Profile Documents: Aadhaar Card, Driving Licence, and Insurance."
+          },
+          "response": []
+        },
+        {
+          "name": "Update Vehicle Details (Insurance & Vehicle Image)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [
+                {
+                  "key": "token",
+                  "value": "{{token}}",
+                  "type": "string"
+                }
+              ]
+            },
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "insurance",
+                  "type": "file",
+                  "description": "Vehicle Insurance image"
+                },
+                {
+                  "key": "vehicle_image",
+                  "type": "file",
+                  "description": "Vehicle image"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/deliveryman/vehicle-details",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "api",
+                "deliveryman",
+                "vehicle-details"
+              ]
+            },
+            "description": "Uploads and updates Vehicle Insurance and Vehicle Image."
           },
           "response": []
         }
@@ -847,6 +1207,14 @@
     },
     {
       "key": "token",
+      "value": ""
+    },
+    {
+      "key": "address_id",
+      "value": ""
+    },
+    {
+      "key": "order_id",
       "value": ""
     }
   ]

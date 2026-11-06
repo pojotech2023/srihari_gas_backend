@@ -17,7 +17,7 @@ class DatabaseSeeder extends Seeder
     {
         // Seed Admin User
         User::create([
-            'name' => 'Sri Hari Gas Admin',
+            'name' => 'BookMyLPG Admin',
             'mobile_number' => '9876543210',
             'password' => Hash::make('admin123'),
             'is_admin' => true,

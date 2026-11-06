@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@yield('title', 'Admin Dashboard') - Sri Hari Gas Agent</title>
+    <title>@yield('title', 'Admin Dashboard') - BookMyLPG</title>
     <link rel="stylesheet" href="{{ asset('css/admin-dashboard.css') }}">
     <!-- Chart.js CDN for visual metric diagrams -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -13,9 +13,9 @@
         <!-- Sidebar Navigation -->
         <aside class="sidebar" id="adminSidebar">
             <div class="sidebar-logo">
-                <img src="{{ asset('images/logo.png') }}" alt="Sri Hari Gas Logo" style="width: 42px; height: 42px; object-fit: contain; border-radius: 0.25rem;">
+                <img src="{{ asset('images/logo.png') }}" alt="BookMyLPG Logo" style="width: 42px; height: 42px; object-fit: contain; border-radius: 0.25rem;">
                 <div>
-                    <h1 class="logo-text">SRI HARI GAS</h1>
+                    <h1 class="logo-text">BOOKMYLPG</h1>
                     <span class="logo-subtext">Admin Panel</span>
                 </div>
             </div>
@@ -76,7 +76,7 @@
                 </button>
                 <div class="page-header">
                     <h1>@yield('header_title')</h1>
-                    <p>@yield('header_subtitle', 'Sri Hari Gas Agent Administration')</p>
+                    <p>@yield('header_subtitle', 'BookMyLPG Administration')</p>
                 </div>
                 <div class="admin-profile-badge">
                     <div class="profile-avatar">
